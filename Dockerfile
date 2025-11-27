@@ -13,7 +13,8 @@ RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu
   libedit-dev libtiff5-dev yasm libopus-dev libsndfile1-dev unzip libavformat-dev \
   libswscale-dev liblua5.2-dev liblua5.2-0 cmake libpq-dev unixodbc-dev autoconf \
   automake ntpdate libxml2-dev libpq-dev libpq5 sngrep lua5.2 lua5.2-doc \
-  libreadline-dev git wget tar libwebsockets-dev libssl-dev libjansson-dev libboost-all-dev && \
+  libreadline-dev git wget tar libwebsockets-dev libssl-dev libjansson-dev \
+  libevent-dev libboost-all-dev && \
   rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/local/src
@@ -62,6 +63,15 @@ RUN git clone https://github.com/st1992/mod_audio_fork.git && \
     cmake --build . --target mod_audio_fork && \
     cp mod_audio_fork.so /usr/local/freeswitch/mod/
 
+# Step 7c: Build mod_audio_stream (from amigniter/mod_audio_stream)
+RUN git clone https://github.com/amigniter/mod_audio_stream.git && \
+    cd /usr/local/src/mod_audio_stream && \
+    git submodule update --init --recursive && \
+    export PKG_CONFIG_PATH=/usr/local/freeswitch/lib/pkgconfig:$PKG_CONFIG_PATH && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release .. && \
+    make && make install
+
 # Step 8: Symlinks and minimal permissions fix
 RUN mkdir -p /usr/local/freeswitch/run && \
     groupadd -f freeswitch && \
@@ -80,4 +90,4 @@ EXPOSE 5060/udp 5060/tcp 5080/udp 5080/tcp 8021/tcp
 
 # Run FreeSWITCH as non-root, load full configs
 USER freeswitch
-CMD ["/usr/sbin/freeswitch", "-u", "freeswitch", "-g", "freeswitch", "-nonat"]
+CMD ["/usr/sbin/freeswitch", "-u", "freeswitch", "-g", "freeswitch"]
